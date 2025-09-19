@@ -13,3 +13,9 @@ Other minor features include:
 - Providing a const representation of identifiers in your domain
 - Extracting identifiers of types using the `IdentifyAs` trait
 - Assigning identifiers to types using the `StableTypeId` trait
+
+# Contributing
+
+`stable_identifier` is an extemely simple crate and I am open to any contributions or ideas for improvements, as long as they are within the scope of stable identifiers.
+One thing in particular is that the `Id<T>` type does not have any trait implementations for other libraries in the ecosystem besides `serde`;
+having more of these impls definitely wouldn't hurt and saves the user from having to maintain their own wrapper type.
