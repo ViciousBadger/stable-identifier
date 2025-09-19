@@ -1,4 +1,4 @@
-A small Rust crate that a convenient abstraction for working with identifiers of various types.
+A small Rust crate that provides a convenient abstraction for working with identifiers of various types.
 
 The main use case of this crate is to define your own "identifier domains" (categories of
 things that can be identified) using the `IdDomain` trait. `IdDomain` can be implemented for
