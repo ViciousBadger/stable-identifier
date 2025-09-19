@@ -4,6 +4,10 @@ The main use case of this crate is to define your own "identifier domains" (cate
 things that can be identified) using the `IdDomain` trait. `IdDomain` can be implemented for
 almost any type or even just a marker struct if you don't have relevant type available already.
 
+You can use any suitable type as a "backing" type for identifiers, be it `String`, `Uuid`...
+the optional feature `tiny_id` provides `TinyId`, a simple fixed-size string-like identifier,
+serving as both an example of a backing type as well as a decent option if you don't need anything fancy.
+
 Other minor features include:
 - Providing random generation of identifiers in your domain
 - Providing a const representation of identifiers in your domain
