@@ -1,71 +1,79 @@
-use super::id::StableId;
+use crate::{GenerateIdStateful, GenerateIdStateless, Id};
 
-/// This trait allows a type to act as a domain for identifiers (`StableId`) by providing
+/// Defines a "domain" of identifiable entities.
+///
+/// ## Purpose
+///
+/// This allows any concrete type to act as a generic argument for identifiers ([`Id`]) by providing
 /// a concrete backing ID type, along with extra types that specify optional behaviour of this
 /// identifier, these can be left as () is the behaviour is not desired.
 pub trait IdDomain {
     /// A presentable name for the ID domain, useful in debugging.
     const NAME: &'static str;
 
-    /// The type to use as a concrete ID data structure. `StableId<Self>` will automatically
-    /// implement any useful traits implemented by this inner backing type such as `Eq`, `Ord`,
-    /// `Hash` and serde's `Serialize`/`Deserialize`.
+    /// The type to use as a concrete data structure for identifiers in this domain.
     ///
-    /// For randomly generated IDs, `Uuid` and `Ulid` are great choices as a backing type.
-    /// For static IDs used for internals like type identification, a plain `String` can be good enough.
-    type Backing: Clone + Eq + std::hash::Hash; // Must be Clone to satisfy bevy's opaque Reflect
+    /// `Id<Self>` will automatically implement the following traits if they are implemented by this inner backing type:
+    /// - [`Debug`]
+    /// - [`std::fmt::Display`]
+    /// - [`Clone`]
+    /// - [`Copy`]
+    /// - [`PartialEq`]
+    /// - [`Eq`]
+    /// - [`Hash`]
+    /// - [`PartialOrd`]
+    /// - [`Ord`]
+    /// - [`serde::Serialize`]/[`serde::Deserialize`] (if `serde` feature is enabled).
+    ///
+    /// Some examples widely used backing types are [`Uuid`](https://docs.rs/uuid) and [`Ulid`](https://docs.rs/ulid) (sortable).
+    ///
+    /// You can of course just use [`String`], although it lacks the convenience of
+    /// stack-allocated, [`Copy`]-able ID types.
+    type Backing;
 
-    /// An optional type that can be used to generate new identifiers in this domain. Can be
-    /// any type that implements either `GenerateIdStateless` or `GenerateIdStateful`.
+    /// A type that can be used to generate new identifiers in this domain. Can be
+    /// any type that implements either [`GenerateIdStateless`] or [`GenerateIdStateful`].
     ///
-    /// For most cases, you can declare an empty struct and use it as a stateless ID generator
-    /// by implementing `GenerateIdStateless`. However, in some cases like with `Ulid`, a
-    /// stateful generator is provided (`ulid::Generator`) that ensures IDs are properly ordered.
+    /// Can also be `()` if random ID generation is not desired.
+    ///
+    /// For most cases, you can declare an empty struct and use your algorithm of choice
+    /// by implementing [`GenerateIdStateless`]. However, in some cases like with [`Ulid`](https://docs.rs/ulid), a
+    /// stateful generator is provided (See [`ulid::Generator`](https://docs.rs/ulid/latest/ulid/struct.Generator.html)) that ensures IDs are properly ordered.
     type Generator;
 
-    /// An optional type to use for const representations of the `Backing` type. This is
-    /// useful when you want to identify something in your source code, for example types
-    /// implementing some common trait using the `StableTypeId` trait. For it to work,
-    /// `Self::Backing` must implement `From<Self::ConstRepr>`.
+    /// A type to use for `const` representations of the [`IdDomain::Backing`] type.
+    ///
+    /// Can be `()` if `const` representations are not deisred.
+    ///
+    /// Used by the [`crate::identify::StableTypeId`] trait to provide type identifiers.
     type ConstRepr;
 
-    // TODO: impl Into
-    fn new_id(from_value: Self::Backing) -> StableId<Self>
+    /// Construct a new identifier from a backing value.
+    fn new_id(from_value: impl Into<Self::Backing>) -> Id<Self>
     where
-        // NOTE: probably unnessecary bound, but how to reove?
+        // NOTE: Self does not really have to be Sized as we are not constructing Self but
+        // Self::Backing, however I am not sure how to remove this bound.
         Self: Sized,
     {
-        StableId::new(from_value)
+        Id::new(from_value.into())
     }
-}
 
-pub trait GenerateIdStateless<D: IdDomain> {
-    fn generate_id() -> StableId<D>;
-}
-
-impl<D: IdDomain> GenerateIdStateless<D> for D
-where
-    D::Generator: GenerateIdStateless<D>,
-{
-    fn generate_id() -> StableId<D> {
-        D::Generator::generate_id()
+    /// Generate a new identifier.
+    fn generate_id() -> Id<Self>
+    where
+        Self: Sized,
+        Self::Generator: GenerateIdStateless<Self>,
+    {
+        Self::Generator::generate_id()
     }
-}
 
-pub trait IdDomainWithStatefulGenerator<D: IdDomain>: std::marker::Sized {
-    fn generate_id(generator: &mut D::Generator) -> StableId<D>;
-}
-
-pub trait GenerateIdStateful<D: IdDomain> {
-    fn generate_id(&mut self) -> StableId<D>;
-}
-
-impl<D: IdDomain> IdDomainWithStatefulGenerator<D> for D
-where
-    D::Generator: GenerateIdStateful<D>,
-{
-    fn generate_id(generator: &mut D::Generator) -> StableId<D> {
-        generator.generate_id()
+    /// Generate an identifier using a given stateful generator.
+    fn generate_id_stateful(generator: &mut Self::Generator) -> Id<Self>
+    where
+        Self: Sized,
+        Self::Generator: GenerateIdStateful<Self>,
+    {
+        generator.generate_id_stateful()
     }
 }
 
@@ -94,7 +102,7 @@ mod tests {
         assert_eq!(dog_id, dog_id);
         assert_eq!(cat_id, cat_id);
 
-        // compiler does not allow eq because StableId<Dog> and StableId<Cat> are different types :)
+        // compiler does not allow eq because Id<Dog> and Id<Cat> are different types :)
         // assert_eq!(dog_id, cat_id);
     }
 }

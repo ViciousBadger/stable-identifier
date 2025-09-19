@@ -1,8 +1,16 @@
-use super::{domain::IdDomain, id::StableId};
+use super::{domain::IdDomain, id::Id};
 
-/// This trait lets you define stable identifiers of a specified `IdDomain` for types.
-/// The implementors get to choose their own identifier that is assumed to be unique.
-/// The ID has similar use cases as `std::any::TypeId` but works in a more reliable and controlled manner.
+/// This trait lets you define stable identifiers of a specified [`IdDomain`] for types.
+/// The implementor gets to choose their own identifier that is assumed to be unique.
+///
+/// ## Use case
+/// Like with [`std::any::TypeId`], implementing this trait allows you to identify a certain type.
+/// Unlike `TypeId`, the provided identifier is "stable"; types can be safely moved and renamed,
+/// system architecture can change and so on, but the identifier remains the same until you change it!
+///
+/// ## Requirements
+///
+/// `IdDomain` **must** provide a `ConstRepr` such that `D::Backing` implements `From<D::ConstRepr>`.
 pub trait StableTypeId<D>
 where
     D: IdDomain,
@@ -13,8 +21,8 @@ where
     const STABLE_TYPE_ID: D::ConstRepr;
 
     /// Get the type ID associated with this concrete type.
-    fn stable_type_id() -> StableId<D> {
-        StableId::new(Self::STABLE_TYPE_ID.into())
+    fn stable_type_id() -> Id<D> {
+        Id::new(Self::STABLE_TYPE_ID.into())
     }
 }
 
@@ -22,7 +30,7 @@ where
 pub trait IdentifyAs<D: IdDomain> {
     /// Gets a stable identifier that can be used to identify this value.
     /// In case the type has multiple identities, the domain will be inferred by pattern matching.
-    fn identify_as(&self) -> StableId<D>;
+    fn identify_as(&self) -> Id<D>;
 }
 
 #[cfg(test)]

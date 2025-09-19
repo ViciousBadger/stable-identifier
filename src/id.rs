@@ -3,10 +3,11 @@ use std::{fmt::Display, hash::Hash};
 use super::domain::IdDomain;
 
 /// A container type for an unique identifier of an object in domain `D`.
+///
 /// The type will automatically inherit most useful traits of the inner backing ID type determined by the domain.
 /// If you want, you can create a convenient type alias for identifiers in your domain:
 /// ```
-/// use stable_identifier::prelude::*;
+/// use stable_identifier::*;
 ///
 /// struct Dog;
 /// impl IdDomain for Dog {
@@ -15,14 +16,14 @@ use super::domain::IdDomain;
 ///     type Generator = ();
 ///     type ConstRepr = ();
 /// }
-/// type DogId = StableId<Dog>;
+/// type DogId = Id<Dog>;
 /// ```
-/// If using serde, `StableId` will serialize directly as the inner type without any alteration.
-pub struct StableId<D: IdDomain> {
+/// If using serde, `Id` will serialize directly as the inner type without any alteration.
+pub struct Id<D: IdDomain> {
     backing: D::Backing,
 }
 
-impl<D: IdDomain> StableId<D> {
+impl<D: IdDomain> Id<D> {
     pub fn backing(&self) -> &D::Backing {
         &self.backing
     }
@@ -32,25 +33,46 @@ impl<D: IdDomain> StableId<D> {
     }
 }
 
-impl<D: IdDomain> AsRef<D::Backing> for StableId<D> {
+impl<D: IdDomain> AsRef<D::Backing> for Id<D> {
     fn as_ref(&self) -> &D::Backing {
         self.backing()
     }
 }
 
-impl<D: IdDomain> std::fmt::Debug for StableId<D>
+impl<D: IdDomain> std::fmt::Debug for Id<D>
 where
     D::Backing: std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("StableId")
-            .field("domain", &D::NAME)
-            .field("id", &self.backing)
+        f.debug_tuple(&format!("Id<{}>", &D::NAME))
+            .field(&self.backing)
             .finish()
     }
 }
 
-impl<D: IdDomain> PartialEq for StableId<D>
+impl<D: IdDomain> Display for Id<D>
+where
+    D::Backing: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} [{}]", D::NAME, self.backing)
+    }
+}
+
+impl<D: IdDomain> Clone for Id<D>
+where
+    D::Backing: Clone,
+{
+    fn clone(&self) -> Self {
+        Id {
+            backing: self.backing.clone(),
+        }
+    }
+}
+
+impl<D: IdDomain> Copy for Id<D> where D::Backing: Copy {}
+
+impl<D: IdDomain> PartialEq for Id<D>
 where
     D::Backing: PartialEq,
 {
@@ -59,27 +81,9 @@ where
     }
 }
 
-impl<D: IdDomain> Eq for StableId<D> where D::Backing: Eq {}
+impl<D: IdDomain> Eq for Id<D> where D::Backing: Eq {}
 
-impl<D: IdDomain> PartialOrd for StableId<D>
-where
-    D::Backing: PartialOrd,
-{
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.backing.partial_cmp(&other.backing)
-    }
-}
-
-impl<D: IdDomain> Ord for StableId<D>
-where
-    D::Backing: Ord,
-{
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.backing.cmp(&other.backing)
-    }
-}
-
-impl<D: IdDomain> Hash for StableId<D>
+impl<D: IdDomain> Hash for Id<D>
 where
     D::Backing: Hash,
 {
@@ -88,12 +92,30 @@ where
     }
 }
 
+impl<D: IdDomain> PartialOrd for Id<D>
+where
+    D::Backing: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.backing.partial_cmp(&other.backing)
+    }
+}
+
+impl<D: IdDomain> Ord for Id<D>
+where
+    D::Backing: Ord,
+{
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.backing.cmp(&other.backing)
+    }
+}
+
 #[cfg(feature = "serde")]
 mod serde {
-    use crate::{domain::IdDomain, id::StableId};
+    use crate::{domain::IdDomain, id::Id};
     use serde::{Deserialize, Serialize};
 
-    impl<D: IdDomain> Serialize for StableId<D>
+    impl<D: IdDomain> Serialize for Id<D>
     where
         D::Backing: Serialize,
     {
@@ -105,7 +127,7 @@ mod serde {
         }
     }
 
-    impl<'de, D: IdDomain> Deserialize<'de> for StableId<D>
+    impl<'de, D: IdDomain> Deserialize<'de> for Id<D>
     where
         D::Backing: Deserialize<'de>,
     {
@@ -113,36 +135,14 @@ mod serde {
         where
             De: serde::Deserializer<'de>,
         {
-            Ok(StableId {
+            Ok(Id {
                 backing: D::Backing::deserialize(deserializer)?,
             })
         }
     }
 }
 
-impl<D: IdDomain> Clone for StableId<D>
-where
-    D::Backing: Clone,
-{
-    fn clone(&self) -> Self {
-        StableId {
-            backing: self.backing.clone(),
-        }
-    }
-}
-
-impl<D: IdDomain> Copy for StableId<D> where D::Backing: Copy {}
-
-impl<D: IdDomain> Display for StableId<D>
-where
-    D::Backing: Display,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} [{}]", D::NAME, self.backing)
-    }
-}
-
-impl<D: IdDomain> StableId<D> {
+impl<D: IdDomain> Id<D> {
     pub const fn new(value: D::Backing) -> Self {
         Self { backing: value }
     }
