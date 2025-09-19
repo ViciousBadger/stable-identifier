@@ -1,7 +1,13 @@
 [package]
 name = "stable_identifier"
 version = "0.1.0"
+description = "Convenience library for working with identifier types"
 edition = "2024"
+license = "MIT"
+keywords = ["identifier", "id", "domain", "type-safe", "newtype"]
+categories = ["data-structures", "rust-patterns"]
+repository = "https://github.com/ViciousBadger/stable-identifier"
+readme = "README.md"
 
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"], optional = true }
