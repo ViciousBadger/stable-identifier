@@ -4,12 +4,13 @@ use super::domain::IdDomain;
 
 /// A container type for an unique identifier of an object in domain `D`.
 /// The type will automatically inherit most useful traits of the inner backing ID type determined by the domain.
-/// If you want you can create a convenient type alias for identifiers in your domain:
+/// If you want, you can create a convenient type alias for identifiers in your domain:
 /// ```
 /// use stable_identifier::prelude::*;
 ///
 /// struct Dog;
 /// impl IdDomain for Dog {
+///     const NAME: &'static str = "Dog";
 ///     type Backing = String;
 ///     type Generator = ();
 ///     type ConstRepr = ();
@@ -17,11 +18,6 @@ use super::domain::IdDomain;
 /// type DogId = StableId<Dog>;
 /// ```
 /// If using serde, `StableId` will serialize directly as the inner type without any alteration.
-#[cfg_attr(
-    feature = "bevy",
-    derive(bevy::ecs::component::Component, bevy::reflect::Reflect)
-)]
-#[cfg_attr(feature = "bevy", reflect(opaque, PartialEq, Hash))] // Opaque to ensure StableId serializes transparently as the backing type
 pub struct StableId<D: IdDomain> {
     backing: D::Backing,
 }
@@ -149,41 +145,5 @@ where
 impl<D: IdDomain> StableId<D> {
     pub const fn new(value: D::Backing) -> Self {
         Self { backing: value }
-    }
-}
-
-#[cfg(feature = "inspector")]
-mod stable_id_inspector {
-    use super::{IdDomain, StableId};
-    use bevy::prelude::*;
-    use bevy_inspector_egui::{
-        egui, inspector_egui_impls::InspectorPrimitive, reflect_inspector::InspectorUi,
-    };
-
-    impl<D> InspectorPrimitive for StableId<D>
-    where
-        D: IdDomain + TypePath,
-        D::Backing: std::fmt::Display + Send + Sync + TypePath,
-    {
-        fn ui(
-            &mut self,
-            ui: &mut egui::Ui,
-            _: &dyn std::any::Any,
-            _: egui::Id,
-            _: InspectorUi<'_, '_>,
-        ) -> bool {
-            ui.label(self.backing.to_string());
-            false
-        }
-
-        fn ui_readonly(
-            &self,
-            ui: &mut egui::Ui,
-            _: &dyn std::any::Any,
-            _: egui::Id,
-            _: InspectorUi<'_, '_>,
-        ) {
-            ui.label(self.backing.to_string());
-        }
     }
 }

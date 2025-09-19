@@ -2,14 +2,10 @@ pub mod prelude {
     pub use super::{
         domain::{
             GenerateIdStateful, GenerateIdStateless, IdDomain, IdDomainWithStatefulGenerator,
-            IdDomainWithStatelessGenerator,
         },
         id::StableId,
         identify::{IdentifyAs, StableTypeId},
     };
-
-    #[cfg(feature = "bevy")]
-    pub use super::bevy::IdAppExt;
 }
 
 pub mod nanoid {
@@ -29,6 +25,3 @@ pub mod nanoid {
 mod domain;
 mod id;
 mod identify;
-
-#[cfg(feature = "bevy")]
-mod bevy;

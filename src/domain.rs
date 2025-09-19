@@ -19,8 +19,8 @@ pub trait IdDomain {
     /// any type that implements either `GenerateIdStateless` or `GenerateIdStateful`.
     ///
     /// For most cases, you can declare an empty struct and use it as a stateless ID generator
-    /// by implementing `GenerateIdStateless`. However, in some cases like with `Ulid`, an
-    /// unique stateful generator is provided (`ulid::Generator`) that ensures IDs are properly ordered.
+    /// by implementing `GenerateIdStateless`. However, in some cases like with `Ulid`, a
+    /// stateful generator is provided (`ulid::Generator`) that ensures IDs are properly ordered.
     type Generator;
 
     /// An optional type to use for const representations of the `Backing` type. This is
@@ -29,6 +29,7 @@ pub trait IdDomain {
     /// `Self::Backing` must implement `From<Self::ConstRepr>`.
     type ConstRepr;
 
+    // TODO: impl Into
     fn new_id(from_value: Self::Backing) -> StableId<Self>
     where
         // NOTE: probably unnessecary bound, but how to reove?
@@ -38,15 +39,11 @@ pub trait IdDomain {
     }
 }
 
-pub trait IdDomainWithStatelessGenerator<D: IdDomain>: std::marker::Sized {
-    fn generate_id() -> StableId<D>;
-}
-
 pub trait GenerateIdStateless<D: IdDomain> {
     fn generate_id() -> StableId<D>;
 }
 
-impl<D: IdDomain> IdDomainWithStatelessGenerator<D> for D
+impl<D: IdDomain> GenerateIdStateless<D> for D
 where
     D::Generator: GenerateIdStateless<D>,
 {
@@ -69,5 +66,35 @@ where
 {
     fn generate_id(generator: &mut D::Generator) -> StableId<D> {
         generator.generate_id()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn domain_bounds() {
+        struct Dog;
+        impl IdDomain for Dog {
+            const NAME: &'static str = "Dog";
+            type Backing = String;
+            type Generator = ();
+            type ConstRepr = ();
+        }
+        struct Cat;
+        impl IdDomain for Cat {
+            const NAME: &'static str = "Cat";
+            type Backing = String;
+            type Generator = ();
+            type ConstRepr = ();
+        }
+        let dog_id = Dog::new_id("hans".to_string());
+        let cat_id = Cat::new_id("hans".to_string());
+        assert_eq!(dog_id, dog_id);
+        assert_eq!(cat_id, cat_id);
+
+        // compiler does not allow eq because StableId<Dog> and StableId<Cat> are different types :)
+        // assert_eq!(dog_id, cat_id);
     }
 }
