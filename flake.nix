@@ -22,26 +22,9 @@
           rustc
           rustfmt
           pre-commit
-          rustPackages.clippy # Base rust setup
-          cargo-watch # Cargo-watch command (live recompiling)
-          cargo-edit # Allows upgrading all dependencies
-          cargo-modules # Show module tree of a crate
-          rust-analyzer # Language server protocol
+          rustPackages.clippy
+          rust-analyzer
           pkg-config
-
-          clang
-          mold # Faster linker
-
-          # Bevy runtime deps
-          udev
-          alsa-lib
-          vulkan-loader
-          xorg.libX11
-          xorg.libXcursor
-          xorg.libXi
-          xorg.libXrandr # To use the x11 feature
-          libxkbcommon
-          wayland # To use the wayland feature
         ];
       in
         mkShell {
