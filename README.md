@@ -1,5 +1,14 @@
 A small Rust crate that provides a convenient abstraction for working with identifiers of various types.
 
+# Motivation
+This library came about as a result of experimenting with ways to implement the "newtype wrappers" for identifiers
+in order to make using the wrong identifier type a compiler error. When working with software with
+lots of persistent data types, this pattern helps declaring intent using the type system, so that you 
+don't have to think too hard about what that one random Uuid really represents - if it's an `Id<Dog>`,
+it's clearly something that identifies a dog - no need to even know the backing type in most cases.
+
+---
+
 The main use case of this crate is to define your own "identifier domains" (categories of
 things that can be identified) using the `IdDomain` trait. `IdDomain` can be implemented for
 almost any type or even just a marker struct if you don't have relevant type available already.
@@ -13,6 +22,15 @@ Other minor features include:
 - Providing a const representation of identifiers in your domain
 - Extracting identifiers of types using the `IdentifyAs` trait
 - Assigning identifiers to types using the `StableTypeId` trait
+
+## Optional features
+//! - `serde` lets you serialize and deserialize [`Id<T>`], as long as the backing type also implements these traits.
+//! - `tiny_id` provides a barebones implementation of a concrete backing type that can be used if you just want a quick and easy identifier, with random ID generation using [`nanoid`](https://docs.rs/nanoid).
+
+# Is it production ready?
+
+Likely not, it's just my best shot at this pattern. There is very little code here, you can easily copy it into your own crate
+to extend it or change some design decision.
 
 # Contributing
 
